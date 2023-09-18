@@ -1,5 +1,4 @@
 
-
 <h1>Plex-Cleaner-Script</h1>
 
 <h2>Purpose: The script is designed to manage storage space by monitoring specific directories containing TV shows and Movies. It checks the available free space and deletes old files if the space falls below a defined threshold. It supports up to 4 directories, only 2 are enabled by default.</h2>
