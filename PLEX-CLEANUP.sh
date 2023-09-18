@@ -6,27 +6,39 @@ movies_directory="MOVIE DIRECTORY" #Add tv show directory file path eg (/mnt/use
 #fourk_tv_shows_directory="4K TV SHOWS DIRECTORY" #Uncomment to add directory as above
 #fourk_movies_directory="4K MOVIES DIRECTORY" #Uncomment to add directory as above
 
-# Default minimum free space eg.(2 TiB) #calculation is done in Tebibytes for slackware systems such as Unraid 1 TiB = 1.099511627776 TB
+# Default minimum free space (2 TiB)
 min_free_space=2048  # 2 TiB (1 TiB = 1024 GiB, 1 GiB = 1024 MiB)
 
-# Default time period in days
-time_period_days=30
+# Default time periods in days for each directory
+tv_shows_time_period=30
+movies_time_period=60
+fourk_tv_shows_time_period=30
+fourk_movies_time_period=30
 
 # Set this to true for a dry run (no files will be deleted)
 dry_run=true
 
-#DO NOT EDIT BELOW THIS SPACE UNLESS YOU KNOW WHAT YOU ARE DOING
-----------------------------------------------------------------------------------------------------------------------------------------
-# Function to delete old files
+# Function to delete old files, prioritizing the oldest ones
 delete_old_files() {
     local directory="$1"
     local max_age_days="$2"
+    local required_min_free_space_gib="$3"
 
     if [ "$dry_run" = true ]; then
         echo "Dry run: Would have deleted files in $directory older than $max_age_days days."
     else
-        find "$directory" -type f -ctime "+$max_age_days" -exec rm {} \;
-        echo "Deleted files in $directory older than $max_age_days days."
+        # Find and delete the oldest files within the time period
+        while IFS= read -r -d '' file; do
+            file_age_days=$(( ( $(date +%s) - $(date -r "$file" +%s) ) / 86400 ))
+            if [ "$file_age_days" -gt "$max_age_days" ]; then
+                file_size_gib=$(du -sk --apparent-size "$file" | awk '{print $1 / 1024 / 1024}')
+                required_min_free_space_gib=$((required_min_free_space_gib - file_size_gib))
+                rm "$file"
+                echo "Deleted file: $file"
+            fi
+        done < <(find "$directory" -type f -print0 | sort -z -n -t$'\0' -k1,2)
+        
+        echo "Deleted old files in $directory to free up space."
     fi
 }
 
@@ -59,13 +71,23 @@ main() {
         # Display the calculated free space
         echo "Calculated free space: $current_free_space GiB"
 
+        # Determine the appropriate time period for each directory
+        if [ "$tv_shows_directory" = "$1" ]; then
+            time_period="$tv_shows_time_period"
+        elif [ "$movies_directory" = "$1" ]; then
+            time_period="$movies_time_period"
+        elif [ "$fourk_tv_shows_directory" = "$1" ]; then
+            time_period="$fourk_tv_shows_time_period"
+        elif [ "$fourk_movies_directory" = "$1" ]; then
+            time_period="$fourk_movies_time_period"
+        else
+            time_period=30  # Default time period if directory not recognized
+        fi
+
         # Perform floating-point comparisons for directory sizes
         if (( $(echo "$current_tv_shows_size >= $required_min_free_space_gib" | bc -l) )) || (( $(echo "$current_movies_size >= $required_min_free_space_gib" | bc -l) )) || (( $(echo "$current_fourk_tv_shows_size >= $required_min_free_space_gib" | bc -l) )) || (( $(echo "$current_fourk_movies_size >= $required_min_free_space_gib" | bc -l) )); then
-            echo "Deleting old files older than $time_period_days days..."
-            delete_old_files "$tv_shows_directory" "$time_period_days"
-            delete_old_files "$movies_directory" "$time_period_days"
-            delete_old_files "$fourk_tv_shows_directory" "$time_period_days"
-            delete_old_files "$fourk_movies_directory" "$time_period_days"
+            echo "Deleting old files older than $time_period days..."
+            delete_old_files "$1" "$time_period" "$required_min_free_space_gib"
         else
             echo "Free space is below the required limit, but not all directories have reached the time period. No files will be deleted."
         fi
