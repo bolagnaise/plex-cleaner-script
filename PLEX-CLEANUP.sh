@@ -12,8 +12,8 @@ min_free_space=2048  # 2 TiB (1 TiB = 1024 GiB, 1 GiB = 1024 MiB)
 # Default time periods in days for each directory
 tv_shows_time_period=30
 movies_time_period=60
-fourk_tv_shows_time_period=30
-fourk_movies_time_period=30
+#fourk_tv_shows_time_period=30 #Uncomment to add time period as above
+#fourk_movies_time_period=30 #Uncomment to add time period as above
 
 # Set this to true for a dry run (no files will be deleted)
 dry_run=true
