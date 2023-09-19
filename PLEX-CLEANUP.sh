@@ -12,8 +12,8 @@ min_free_space=2048  # 2 TiB (1 TiB = 1024 GiB, 1 GiB = 1024 MiB)
 # Default time periods in days for each directory
 tv_shows_time_period=30
 movies_time_period=60
-#fourk_tv_shows_time_period=30 #Uncomment to add time period as above
-#fourk_movies_time_period=30 #Uncomment to add time period as above
+#fourk_tv_shows_time_period=90 #Uncomment to add directory
+#fourk_movies_time_period=120 #Uncomment to add directory
 
 # Set this to true for a dry run (no files will be deleted)
 dry_run=true
@@ -21,22 +21,28 @@ dry_run=true
 # Function to delete old files, prioritizing the oldest ones
 delete_old_files() {
     local directory="$1"
-    local max_age_days="$2"
-    local required_min_free_space_gib="$3"
+    local required_min_free_space_gib="$2"
 
     if [ "$dry_run" = true ]; then
-        echo "Dry run: Would have deleted files in $directory older than $max_age_days days."
+        echo "Dry run: Would have deleted files in $directory to free up space."
     else
-        # Find and delete the oldest files within the time period
-        while IFS= read -r -d '' file; do
-            file_age_days=$(( ( $(date +%s) - $(date -r "$file" +%s) ) / 86400 ))
-            if [ "$file_age_days" -gt "$max_age_days" ]; then
-                file_size_gib=$(du -sk --apparent-size "$file" | awk '{print $1 / 1024 / 1024}')
-                required_min_free_space_gib=$((required_min_free_space_gib - file_size_gib))
-                rm "$file"
-                echo "Deleted file: $file"
+        # Find and delete the oldest files until the required minimum free space is met
+        while [ $(df -BG "$(dirname "$directory")" | awk 'NR==2 {print $4}' | tr -d 'G') -lt "$required_min_free_space_gib" ]; do
+            # Find the oldest file in the directory
+            oldest_file=$(find "$directory" -type f -printf '%T+ %p\n' | sort | head -n 1 | awk '{print $NF}')
+            
+            # Check if there are no more files to delete
+            if [ -z "$oldest_file" ]; then
+                echo "No more files to delete in $directory. Free space is still below the required limit."
+                break
             fi
-        done < <(find "$directory" -type f -print0 | sort -z -n -t$'\0' -k1,2)
+
+            # Delete the oldest file
+            file_size_gib=$(du -sk --apparent-size "$oldest_file" | awk '{print $1 / 1024 / 1024}')
+            required_min_free_space_gib=$((required_min_free_space_gib - file_size_gib))
+            rm "$oldest_file"
+            echo "Deleted file: $oldest_file"
+        done
         
         echo "Deleted old files in $directory to free up space."
     fi
@@ -71,26 +77,11 @@ main() {
         # Display the calculated free space
         echo "Calculated free space: $current_free_space GiB"
 
-        # Determine the appropriate time period for each directory
-        if [ "$tv_shows_directory" = "$1" ]; then
-            time_period="$tv_shows_time_period"
-        elif [ "$movies_directory" = "$1" ]; then
-            time_period="$movies_time_period"
-        elif [ "$fourk_tv_shows_directory" = "$1" ]; then
-            time_period="$fourk_tv_shows_time_period"
-        elif [ "$fourk_movies_directory" = "$1" ]; then
-            time_period="$fourk_movies_time_period"
-        else
-            time_period=30  # Default time period if directory not recognized
-        fi
-
-        # Perform floating-point comparisons for directory sizes
-        if (( $(echo "$current_tv_shows_size >= $required_min_free_space_gib" | bc -l) )) || (( $(echo "$current_movies_size >= $required_min_free_space_gib" | bc -l) )) || (( $(echo "$current_fourk_tv_shows_size >= $required_min_free_space_gib" | bc -l) )) || (( $(echo "$current_fourk_movies_size >= $required_min_free_space_gib" | bc -l) )); then
-            echo "Deleting old files older than $time_period days..."
-            delete_old_files "$1" "$time_period" "$required_min_free_space_gib"
-        else
-            echo "Free space is below the required limit, but not all directories have reached the time period. No files will be deleted."
-        fi
+        echo "Deleting old files..."
+        delete_old_files "$tv_shows_directory" "$required_min_free_space_gib"
+        delete_old_files "$movies_directory" "$required_min_free_space_gib"
+        delete_old_files "$fourk_tv_shows_directory" "$required_min_free_space_gib"
+        delete_old_files "$fourk_movies_directory" "$required_min_free_space_gib"
     else
         echo "Free space in $(dirname "$tv_shows_directory") is sufficient. No action needed."
         # Display the calculated free space
