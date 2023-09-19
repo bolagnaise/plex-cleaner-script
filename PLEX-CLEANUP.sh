@@ -1,24 +1,30 @@
-#!/bin/bash
+\#!/bin/bash
 
-# Full directory paths (update these paths as needed, if additonal directories are required then remove the preceeding #)
+####### EDIT ONLY THESE SETTINGS #######
+
+# Full directory paths (update these paths as needed)
 tv_shows_directory="/mnt/user/rclone_upload/gdrive_vfs/TV Shows"
 movies_directory="/mnt/user/rclone_upload/gdrive_vfs/Movies"
 #fourk_tv_shows_directory="/mnt/user/rclone_upload/gdrive_vfs/4KTVShows" # Uncomment if required
 #fourk_movies_directory="/mnt/user/rclone_upload/gdrive_vfs/4KMovies" # Uncomment if required
 
-# Default minimum free space (2 TiB) Adjust as needed
+# Default minimum free space (2 TiB)
 min_free_space=2048  # 2 TiB (1 TiB = 1024 GiB, 1 GiB = 1024 MiB)
 
-# Default time periods in days for each directory (update these times as needed, if additonal directories are required then remove the preceeding #)
+# Default time periods in days for each directory
 tv_shows_time_period=30
 movies_time_period=60
-#fourk_tv_shows_time_period=90
-#fourk_movies_time_period=120
+#fourk_tv_shows_time_period=90 # Uncomment if required
+#fourk_movies_time_period=120 # Uncomment if required
 
 # Set this to true for a dry run (no files will be deleted)
 dry_run=true
 
-###############################DO NOT EDIT BELOW THIS LINE #################################
+####### END SETTINGS #######
+
+###############################################################################
+#####   DO NOT EDIT ANYTHING BELOW UNLESS YOU KNOW WHAT YOU ARE DOING   #######
+###############################################################################
 
 # Function to delete old files, prioritizing the oldest ones
 delete_old_files() {
