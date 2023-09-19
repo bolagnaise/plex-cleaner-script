@@ -9,7 +9,7 @@ movies_directory="/mnt/user/rclone_upload/gdrive_vfs/Movies"
 #fourk_movies_directory="/mnt/user/rclone_upload/gdrive_vfs/4KMovies" # Uncomment if required
 
 # Default minimum free space (2 TiB)
-min_free_space=2048  # 2 TiB (1 TiB = 1024 GiB, 1 GiB = 1024 MiB)
+min_free_space=2048  # 2 TiB (1 TiB = 1024 GiB, multiple 1024 x your desired min free space in TiB ie 3 x 1024 = 3072)
 
 # Default time periods in days for each directory
 tv_shows_time_period=30
