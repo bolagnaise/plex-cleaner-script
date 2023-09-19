@@ -23,13 +23,18 @@ delete_old_files() {
     local directory="$1"
     local required_min_free_space_gib="$2"
 
+    if [ ! -d "$directory" ]; then
+        echo "Directory $directory does not exist. Skipping..."
+        return
+    fi
+
     if [ "$dry_run" = true ]; then
         echo "Dry run: Would have deleted files in $directory to free up space."
     else
         # Find and delete the oldest files until the required minimum free space is met
         while [ $(df -BG "$(dirname "$directory")" | awk 'NR==2 {print $4}' | tr -d 'G') -lt "$required_min_free_space_gib" ]; do
             # Find the oldest file in the directory
-            oldest_file=$(find "$directory" -type f -printf '%T+ %p\n' | sort | head -n 1 | awk '{print $NF}')
+            oldest_file=$(find "$directory" -type f -printf '%T+ %p\n' 2>/dev/null | sort | head -n 1 | awk '{print $NF}')
             
             # Check if there are no more files to delete
             if [ -z "$oldest_file" ]; then
@@ -38,10 +43,14 @@ delete_old_files() {
             fi
 
             # Delete the oldest file
-            file_size_gib=$(du -sk --apparent-size "$oldest_file" | awk '{print $1 / 1024 / 1024}')
-            required_min_free_space_gib=$((required_min_free_space_gib - file_size_gib))
-            rm "$oldest_file"
-            echo "Deleted file: $oldest_file"
+            if [ -f "$oldest_file" ]; then
+                file_size_gib=$(du -sk --apparent-size "$oldest_file" | awk '{print $1 / 1024 / 1024}')
+                required_min_free_space_gib=$((required_min_free_space_gib - file_size_gib))
+                rm "$oldest_file"
+                echo "Deleted file: $oldest_file"
+            else
+                echo "File $oldest_file no longer exists. Skipping..."
+            fi
         done
         
         echo "Deleted old files in $directory to free up space."
@@ -51,6 +60,10 @@ delete_old_files() {
 # Function to get the directory size in gibibytes as a floating-point number
 get_directory_size() {
     local directory="$1"
+    if [ ! -d "$directory" ]; then
+        echo "Directory $directory does not exist. Skipping..."
+        return 0
+    fi
     du -sk --apparent-size "$directory" | awk '{print $1 / 1024 / 1024}'
 }
 
