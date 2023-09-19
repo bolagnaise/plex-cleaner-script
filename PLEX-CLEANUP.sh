@@ -1,22 +1,24 @@
 #!/bin/bash
 
-# Default directory paths (you can change these defaults if needed)
-tv_shows_directory="TV SHOW DIRECTORY" #Add tv show directory file path eg (/mnt/user/rclone_upload/gdrive_vfs/TV Shows)
-movies_directory="MOVIE DIRECTORY" #Add tv show directory file path eg (/mnt/user/rclone_upload/gdrive_vfs/Movies)
-#fourk_tv_shows_directory="4K TV SHOWS DIRECTORY" #Uncomment to add directory as above
-#fourk_movies_directory="4K MOVIES DIRECTORY" #Uncomment to add directory as above
+# Full directory paths (update these paths as needed, if additonal directories are required then remove the preceeding #)
+tv_shows_directory="/mnt/user/rclone_upload/gdrive_vfs/TV Shows"
+movies_directory="/mnt/user/rclone_upload/gdrive_vfs/Movies"
+#fourk_tv_shows_directory="/mnt/user/rclone_upload/gdrive_vfs/4KTVShows" # Uncomment if required
+#fourk_movies_directory="/mnt/user/rclone_upload/gdrive_vfs/4KMovies" # Uncomment if required
 
-# Default minimum free space (2 TiB)
+# Default minimum free space (2 TiB) Adjust as needed
 min_free_space=2048  # 2 TiB (1 TiB = 1024 GiB, 1 GiB = 1024 MiB)
 
-# Default time periods in days for each directory
+# Default time periods in days for each directory (update these times as needed, if additonal directories are required then remove the preceeding #)
 tv_shows_time_period=30
 movies_time_period=60
-#fourk_tv_shows_time_period=90 #Uncomment to add directory
-#fourk_movies_time_period=120 #Uncomment to add directory
+#fourk_tv_shows_time_period=90
+#fourk_movies_time_period=120
 
 # Set this to true for a dry run (no files will be deleted)
 dry_run=true
+
+###############################DO NOT EDIT BELOW THIS LINE #################################
 
 # Function to delete old files, prioritizing the oldest ones
 delete_old_files() {
@@ -91,10 +93,18 @@ main() {
         echo "Calculated free space: $current_free_space GiB"
 
         echo "Deleting old files..."
-        delete_old_files "$tv_shows_directory" "$required_min_free_space_gib"
-        delete_old_files "$movies_directory" "$required_min_free_space_gib"
-        delete_old_files "$fourk_tv_shows_directory" "$required_min_free_space_gib"
-        delete_old_files "$fourk_movies_directory" "$required_min_free_space_gib"
+        if [ -n "$tv_shows_directory" ]; then
+            delete_old_files "$tv_shows_directory" "$required_min_free_space_gib"
+        fi
+        if [ -n "$movies_directory" ]; then
+            delete_old_files "$movies_directory" "$required_min_free_space_gib"
+        fi
+        if [ -n "$fourk_tv_shows_directory" ]; then
+            delete_old_files "$fourk_tv_shows_directory" "$required_min_free_space_gib"
+        fi
+        if [ -n "$fourk_movies_directory" ]; then
+            delete_old_files "$fourk_movies_directory" "$required_min_free_space_gib"
+        fi
     else
         echo "Free space in $(dirname "$tv_shows_directory") is sufficient. No action needed."
         # Display the calculated free space
